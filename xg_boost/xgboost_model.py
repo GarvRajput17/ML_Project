@@ -1,16 +1,16 @@
 import pandas as pd
 import numpy as np
-from sklearn.tree import DecisionTreeRegressor, plot_tree
+import xgboost as xgb
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import GridSearchCV, cross_val_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from data_preprocessing import DataPreprocessor
+from data.data_preprocessing import DataPreprocessor
 import warnings
 warnings.filterwarnings('ignore')
 
-class DecisionTreeModel:
-    """Decision Tree Regression Model for Patient Recovery Prediction"""
+class XGBoostModel:
+    """XGBoost Regression Model for Patient Recovery Prediction"""
     
     def __init__(self):
         self.model = None
@@ -19,12 +19,20 @@ class DecisionTreeModel:
         self.training_history = {}
         
     def train_basic_model(self, X_train, y_train, X_val, y_val):
-        """Train a basic decision tree model"""
-        print("Training basic Decision Tree model...")
+        """Train a basic XGBoost model"""
+        print("Training basic XGBoost model...")
         print("="*50)
         
-        # Create and train basic model
-        self.model = DecisionTreeRegressor(random_state=42)
+        # Create and train basic model with reasonable defaults
+        self.model = xgb.XGBRegressor(
+            n_estimators=100,
+            max_depth=6,
+            learning_rate=0.1,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            random_state=42,
+            n_jobs=-1
+        )
         self.model.fit(X_train, y_train)
         
         # Make predictions
@@ -51,7 +59,7 @@ class DecisionTreeModel:
             'val_predictions': y_val_pred
         }
         
-        print(f"Basic Decision Tree Results:")
+        print(f"Basic XGBoost Results:")
         print(f"Training MSE: {train_mse:.4f}")
         print(f"Validation MSE: {val_mse:.4f}")
         print(f"Training R²: {train_r2:.4f}")
@@ -62,35 +70,44 @@ class DecisionTreeModel:
         return self.model
     
     def hyperparameter_tuning(self, X_train, y_train, X_val, y_val):
-        """Perform hyperparameter tuning using GridSearchCV"""
-        print("\nPerforming hyperparameter tuning...")
+        """Perform hyperparameter tuning using GridSearchCV (M3-optimized)"""
+        print("\nPerforming XGBoost hyperparameter tuning (M3-optimized)...")
         print("="*50)
         
-        # Define parameter grid
+        # M3-friendly parameter grid for XGBoost
         param_grid = {
-            'max_depth': [3, 5, 7, 10, 15, 20, None],
-            'min_samples_split': [2, 5, 10, 20, 50],
-            'min_samples_leaf': [1, 2, 5, 10, 20],
-            'max_features': ['auto', 'sqrt', 'log2', None],
-            'criterion': ['squared_error', 'friedman_mse', 'absolute_error']
+            'n_estimators': [100, 200, 300],
+            'max_depth': [3, 6, 9],
+            'learning_rate': [0.01, 0.1, 0.2],
+            'subsample': [0.8, 0.9, 1.0],
+            'colsample_bytree': [0.8, 0.9, 1.0],
+            'reg_alpha': [0, 0.1, 1],
+            'reg_lambda': [0, 0.1, 1]
         }
         
-        print("Parameter grid:")
+        print("M3-optimized XGBoost parameter grid:")
         for param, values in param_grid.items():
             print(f"  {param}: {values}")
         
-        # Create GridSearchCV
+        # Calculate total combinations
+        total_combinations = 1
+        for values in param_grid.values():
+            total_combinations *= len(values)
+        print(f"Total combinations: {total_combinations}")
+        print(f"With 3-fold CV: {total_combinations * 3} total fits")
+        
+        # Create GridSearchCV with reduced CV folds for M3
         grid_search = GridSearchCV(
-            DecisionTreeRegressor(random_state=42),
+            xgb.XGBRegressor(random_state=42, n_jobs=-1),
             param_grid,
-            cv=5,
+            cv=3,  # Reduced from 5 to 3 for M3
             scoring='neg_mean_squared_error',
             n_jobs=-1,
             verbose=1
         )
         
         # Fit the grid search
-        print("\nStarting grid search...")
+        print("\nStarting M3-optimized XGBoost grid search...")
         grid_search.fit(X_train, y_train)
         
         # Get best parameters
@@ -126,7 +143,7 @@ class DecisionTreeModel:
             'best_params': self.best_params
         }
         
-        print(f"\nTuned Decision Tree Results:")
+        print(f"\nTuned XGBoost Results:")
         print(f"Training MSE: {train_mse:.4f}")
         print(f"Validation MSE: {val_mse:.4f}")
         print(f"Training R²: {train_r2:.4f}")
@@ -138,7 +155,7 @@ class DecisionTreeModel:
     
     def analyze_feature_importance(self, feature_names):
         """Analyze and visualize feature importance"""
-        print("\nAnalyzing feature importance...")
+        print("\nAnalyzing XGBoost feature importance...")
         print("="*50)
         
         if self.model is None:
@@ -156,20 +173,20 @@ class DecisionTreeModel:
             print(f"  {row['feature']}: {row['importance']:.4f}")
         
         # Create visualization
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(12, 8))
         sns.barplot(data=self.feature_importance, x='importance', y='feature')
-        plt.title('Decision Tree - Feature Importance')
+        plt.title('XGBoost - Feature Importance', fontsize=14, fontweight='bold')
         plt.xlabel('Importance')
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/decision_tree_feature_importance.png', 
+        plt.savefig('./xg_boost/xgboost_feature_importance.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
         
         return self.feature_importance
     
-    def cross_validation_analysis(self, X_train, y_train, cv=5):
-        """Perform cross-validation analysis"""
-        print(f"\nPerforming {cv}-fold cross-validation...")
+    def cross_validation_analysis(self, X_train, y_train, cv=3):
+        """Perform cross-validation analysis (M3-optimized)"""
+        print(f"\nPerforming {cv}-fold cross-validation (M3-optimized)...")
         print("="*50)
         
         if self.model is None:
@@ -195,7 +212,7 @@ class DecisionTreeModel:
     
     def create_visualizations(self, X_val, y_val, feature_names):
         """Create comprehensive visualizations"""
-        print("\nCreating visualizations...")
+        print("\nCreating XGBoost visualizations...")
         print("="*50)
         
         if self.model is None:
@@ -207,7 +224,7 @@ class DecisionTreeModel:
         
         # Create figure with subplots
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle('Decision Tree Model Analysis', fontsize=16, fontweight='bold')
+        fig.suptitle('XGBoost Model Analysis', fontsize=16, fontweight='bold')
         
         # 1. Actual vs Predicted scatter plot
         axes[0, 0].scatter(y_val, y_val_pred, alpha=0.6, color='blue')
@@ -247,7 +264,7 @@ class DecisionTreeModel:
         axes[1, 1].legend()
         
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/decision_tree_analysis.png', 
+        plt.savefig('./xg_boost/xgboost_analysis.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
     
@@ -274,16 +291,16 @@ class DecisionTreeModel:
         print(f"Prediction mean: {test_predictions.mean():.2f}")
         
         # Save submission file
-        submission.to_csv('/Users/garvrajput/StudioProjects/ML PROJ/decision_tree_submission.csv', 
+        submission.to_csv('./xg_boost/xgboost_submission.csv', 
                          index=False)
-        print("Submission file saved as 'decision_tree_submission.csv'")
+        print("Submission file saved as 'xgboost_submission.csv'")
         
         return submission
     
     def get_model_summary(self):
         """Get comprehensive model summary"""
         print("\n" + "="*60)
-        print("DECISION TREE MODEL SUMMARY")
+        print("XGBOOST MODEL SUMMARY")
         print("="*60)
         
         if self.model is None:
@@ -293,8 +310,9 @@ class DecisionTreeModel:
         print(f"Model type: {type(self.model).__name__}")
         print(f"Best parameters: {self.best_params}")
         print(f"Number of features: {self.model.n_features_in_}")
-        print(f"Tree depth: {self.model.get_depth()}")
-        print(f"Number of leaves: {self.model.get_n_leaves()}")
+        print(f"Number of estimators: {self.model.n_estimators}")
+        print(f"Learning rate: {self.model.learning_rate}")
+        print(f"Max depth: {self.model.max_depth}")
         
         if 'tuned' in self.training_history:
             results = self.training_history['tuned']
@@ -315,15 +333,15 @@ class DecisionTreeModel:
         return self.training_history
 
 def main():
-    """Main function to run Decision Tree model"""
-    print("Starting Decision Tree Model Training...")
+    """Main function to run XGBoost model"""
+    print("Starting XGBoost Model Training (M3-Optimized)...")
     print("="*60)
     
     # Load and preprocess data
     preprocessor = DataPreprocessor()
     train_df, test_df = preprocessor.load_data(
-        '/Users/garvrajput/StudioProjects/ML PROJ/venv/train.csv',
-        '/Users/garvrajput/StudioProjects/ML PROJ/venv/test.csv'
+        './data/train.csv',
+        './data/test.csv'
     )
     
     # Preprocess data
@@ -337,38 +355,38 @@ def main():
     # Get feature names
     feature_names = preprocessor.feature_columns
     
-    # Initialize and train Decision Tree model
-    dt_model = DecisionTreeModel()
+    # Initialize and train XGBoost model
+    xgboost_model = XGBoostModel()
     
     # Train basic model
-    dt_model.train_basic_model(X_train_scaled, y_train, X_val_scaled, y_val)
+    xgboost_model.train_basic_model(X_train_scaled, y_train, X_val_scaled, y_val)
     
-    # Hyperparameter tuning
-    dt_model.hyperparameter_tuning(X_train_scaled, y_train, X_val_scaled, y_val)
+    # Hyperparameter tuning (M3-optimized)
+    xgboost_model.hyperparameter_tuning(X_train_scaled, y_train, X_val_scaled, y_val)
     
     # Analyze feature importance
-    dt_model.analyze_feature_importance(feature_names)
+    xgboost_model.analyze_feature_importance(feature_names)
     
-    # Cross-validation analysis
-    dt_model.cross_validation_analysis(X_train_scaled, y_train)
+    # Cross-validation analysis (M3-optimized)
+    xgboost_model.cross_validation_analysis(X_train_scaled, y_train)
     
     # Create visualizations
-    dt_model.create_visualizations(X_val_scaled, y_val, feature_names)
+    xgboost_model.create_visualizations(X_val_scaled, y_val, feature_names)
     
     # Make test predictions
     test_ids = test_df['Id'].values
-    submission = dt_model.predict_test_data(X_test_scaled, test_ids)
+    submission = xgboost_model.predict_test_data(X_test_scaled, test_ids)
     
     # Get model summary
-    summary = dt_model.get_model_summary()
+    summary = xgboost_model.get_model_summary()
     
-    print("\nDecision Tree model training completed!")
+    print("\nXGBoost model training completed!")
     print("Check the generated files:")
-    print("- decision_tree_feature_importance.png")
-    print("- decision_tree_analysis.png")
-    print("- decision_tree_submission.csv")
+    print("- xgboost_feature_importance.png")
+    print("- xgboost_analysis.png")
+    print("- xgboost_submission.csv")
     
-    return dt_model, summary
+    return xgboost_model, summary
 
 if __name__ == "__main__":
     model, summary = main()

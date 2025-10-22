@@ -5,7 +5,7 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, cross_val_score, KFold
 import matplotlib.pyplot as plt
 import seaborn as sns
-from data_preprocessing import DataPreprocessor
+from data.data_preprocessing import DataPreprocessor
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -318,7 +318,7 @@ class RigorousXGBoostModel:
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_cv_results.png', 
+        plt.savefig('./xg_boost/xgboost_cv_results.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
         
@@ -379,7 +379,7 @@ class RigorousXGBoostModel:
         axes[1, 1].grid(True, alpha=0.3)
         
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_feature_importance.png', 
+        plt.savefig('./xg_boost/xgboost_feature_importance.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
         
@@ -498,7 +498,7 @@ class RigorousXGBoostModel:
         axes[2, 2].axis('off')
         
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_comprehensive_analysis.png', 
+        plt.savefig('./xg_boost/xgboost_comprehensive_analysis.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
     
@@ -526,7 +526,7 @@ class RigorousXGBoostModel:
         print(f"Prediction std: {test_predictions.std():.2f}")
         
         # Save submission file
-        submission.to_csv('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_rigorous_submission.csv', 
+        submission.to_csv('./xg_boost/xgboost_rigorous_submission.csv', 
                          index=False)
         print("Submission file saved as 'xgboost_rigorous_submission.csv'")
         
@@ -581,8 +581,8 @@ def main():
     # Load and preprocess data
     preprocessor = DataPreprocessor()
     train_df, test_df = preprocessor.load_data(
-        '/Users/garvrajput/StudioProjects/ML PROJ/train.csv',
-        '/Users/garvrajput/StudioProjects/ML PROJ/test.csv'
+        './data/train.csv',
+        './data/test.csv'
     )
     
     # Preprocess data

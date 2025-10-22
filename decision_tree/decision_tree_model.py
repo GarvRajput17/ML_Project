@@ -1,17 +1,16 @@
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import AdaBoostRegressor
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor, plot_tree
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import GridSearchCV, cross_val_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from data_preprocessing import DataPreprocessor
+from data.data_preprocessing import DataPreprocessor
 import warnings
 warnings.filterwarnings('ignore')
 
-class AdaBoostModel:
-    """AdaBoost Regression Model for Patient Recovery Prediction"""
+class DecisionTreeModel:
+    """Decision Tree Regression Model for Patient Recovery Prediction"""
     
     def __init__(self):
         self.model = None
@@ -20,17 +19,12 @@ class AdaBoostModel:
         self.training_history = {}
         
     def train_basic_model(self, X_train, y_train, X_val, y_val):
-        """Train a basic AdaBoost model"""
-        print("Training basic AdaBoost model...")
+        """Train a basic decision tree model"""
+        print("Training basic Decision Tree model...")
         print("="*50)
         
-        # Create and train basic model with reasonable defaults
-        self.model = AdaBoostRegressor(
-            estimator=DecisionTreeRegressor(max_depth=3, random_state=42),
-            n_estimators=100,
-            learning_rate=1.0,
-            random_state=42
-        )
+        # Create and train basic model
+        self.model = DecisionTreeRegressor(random_state=42)
         self.model.fit(X_train, y_train)
         
         # Make predictions
@@ -57,7 +51,7 @@ class AdaBoostModel:
             'val_predictions': y_val_pred
         }
         
-        print(f"Basic AdaBoost Results:")
+        print(f"Basic Decision Tree Results:")
         print(f"Training MSE: {train_mse:.4f}")
         print(f"Validation MSE: {val_mse:.4f}")
         print(f"Training R²: {train_r2:.4f}")
@@ -68,42 +62,35 @@ class AdaBoostModel:
         return self.model
     
     def hyperparameter_tuning(self, X_train, y_train, X_val, y_val):
-        """Perform hyperparameter tuning using GridSearchCV (M3-optimized)"""
-        print("\nPerforming AdaBoost hyperparameter tuning (M3-optimized)...")
+        """Perform hyperparameter tuning using GridSearchCV"""
+        print("\nPerforming hyperparameter tuning...")
         print("="*50)
         
-        # M3-friendly parameter grid for AdaBoost (simplified)
+        # Define parameter grid
         param_grid = {
-            'n_estimators': [50, 100, 200],
-            'learning_rate': [0.1, 0.5, 1.0],
-            'estimator__max_depth': [2, 3, 4],
-            'estimator__min_samples_split': [2, 5],
-            'estimator__min_samples_leaf': [1, 2]
+            'max_depth': [3, 5, 7, 10, 15, 20, None],
+            'min_samples_split': [2, 5, 10, 20, 50],
+            'min_samples_leaf': [1, 2, 5, 10, 20],
+            'max_features': ['auto', 'sqrt', 'log2', None],
+            'criterion': ['squared_error', 'friedman_mse', 'absolute_error']
         }
         
-        print("M3-optimized AdaBoost parameter grid:")
+        print("Parameter grid:")
         for param, values in param_grid.items():
             print(f"  {param}: {values}")
         
-        # Calculate total combinations
-        total_combinations = 1
-        for values in param_grid.values():
-            total_combinations *= len(values)
-        print(f"Total combinations: {total_combinations}")
-        print(f"With 3-fold CV: {total_combinations * 3} total fits")
-        
-        # Create GridSearchCV with reduced CV folds for M3
+        # Create GridSearchCV
         grid_search = GridSearchCV(
-            AdaBoostRegressor(estimator=DecisionTreeRegressor(random_state=42), random_state=42),
+            DecisionTreeRegressor(random_state=42),
             param_grid,
-            cv=3,  # Reduced from 5 to 3 for M3
+            cv=5,
             scoring='neg_mean_squared_error',
             n_jobs=-1,
             verbose=1
         )
         
         # Fit the grid search
-        print("\nStarting M3-optimized AdaBoost grid search...")
+        print("\nStarting grid search...")
         grid_search.fit(X_train, y_train)
         
         # Get best parameters
@@ -139,7 +126,7 @@ class AdaBoostModel:
             'best_params': self.best_params
         }
         
-        print(f"\nTuned AdaBoost Results:")
+        print(f"\nTuned Decision Tree Results:")
         print(f"Training MSE: {train_mse:.4f}")
         print(f"Validation MSE: {val_mse:.4f}")
         print(f"Training R²: {train_r2:.4f}")
@@ -151,7 +138,7 @@ class AdaBoostModel:
     
     def analyze_feature_importance(self, feature_names):
         """Analyze and visualize feature importance"""
-        print("\nAnalyzing AdaBoost feature importance...")
+        print("\nAnalyzing feature importance...")
         print("="*50)
         
         if self.model is None:
@@ -169,53 +156,20 @@ class AdaBoostModel:
             print(f"  {row['feature']}: {row['importance']:.4f}")
         
         # Create visualization
-        plt.figure(figsize=(12, 8))
+        plt.figure(figsize=(10, 6))
         sns.barplot(data=self.feature_importance, x='importance', y='feature')
-        plt.title('AdaBoost - Feature Importance', fontsize=14, fontweight='bold')
+        plt.title('Decision Tree - Feature Importance')
         plt.xlabel('Importance')
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/adaboost_feature_importance.png', 
+        plt.savefig('./decision_tree/decision_tree_feature_importance.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
         
         return self.feature_importance
     
-    def analyze_estimator_weights(self):
-        """Analyze the weights of individual estimators"""
-        print("\nAnalyzing AdaBoost estimator weights...")
-        print("="*50)
-        
-        if self.model is None:
-            print("No model trained yet!")
-            return None
-        
-        # Get estimator weights
-        estimator_weights = self.model.estimator_weights_
-        
-        print(f"Number of estimators: {len(estimator_weights)}")
-        print(f"Weight statistics:")
-        print(f"  Mean weight: {np.mean(estimator_weights):.4f}")
-        print(f"  Std weight: {np.std(estimator_weights):.4f}")
-        print(f"  Min weight: {np.min(estimator_weights):.4f}")
-        print(f"  Max weight: {np.max(estimator_weights):.4f}")
-        
-        # Create visualization
-        plt.figure(figsize=(12, 6))
-        plt.plot(estimator_weights, 'b-', alpha=0.7)
-        plt.title('AdaBoost - Estimator Weights Over Time', fontsize=14, fontweight='bold')
-        plt.xlabel('Estimator Index')
-        plt.ylabel('Weight')
-        plt.grid(True, alpha=0.3)
-        plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/adaboost_estimator_weights.png', 
-                   dpi=300, bbox_inches='tight')
-        plt.show()
-        
-        return estimator_weights
-    
-    def cross_validation_analysis(self, X_train, y_train, cv=3):
-        """Perform cross-validation analysis (M3-optimized)"""
-        print(f"\nPerforming {cv}-fold cross-validation (M3-optimized)...")
+    def cross_validation_analysis(self, X_train, y_train, cv=5):
+        """Perform cross-validation analysis"""
+        print(f"\nPerforming {cv}-fold cross-validation...")
         print("="*50)
         
         if self.model is None:
@@ -241,7 +195,7 @@ class AdaBoostModel:
     
     def create_visualizations(self, X_val, y_val, feature_names):
         """Create comprehensive visualizations"""
-        print("\nCreating AdaBoost visualizations...")
+        print("\nCreating visualizations...")
         print("="*50)
         
         if self.model is None:
@@ -253,7 +207,7 @@ class AdaBoostModel:
         
         # Create figure with subplots
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle('AdaBoost Model Analysis', fontsize=16, fontweight='bold')
+        fig.suptitle('Decision Tree Model Analysis', fontsize=16, fontweight='bold')
         
         # 1. Actual vs Predicted scatter plot
         axes[0, 0].scatter(y_val, y_val_pred, alpha=0.6, color='blue')
@@ -293,7 +247,7 @@ class AdaBoostModel:
         axes[1, 1].legend()
         
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/adaboost_analysis.png', 
+        plt.savefig('./decision_tree/decision_tree_analysis.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
     
@@ -320,16 +274,16 @@ class AdaBoostModel:
         print(f"Prediction mean: {test_predictions.mean():.2f}")
         
         # Save submission file
-        submission.to_csv('/Users/garvrajput/StudioProjects/ML PROJ/adaboost_submission.csv', 
+        submission.to_csv('./decision_tree/decision_tree_submission.csv', 
                          index=False)
-        print("Submission file saved as 'adaboost_submission.csv'")
+        print("Submission file saved as 'decision_tree_submission.csv'")
         
         return submission
     
     def get_model_summary(self):
         """Get comprehensive model summary"""
         print("\n" + "="*60)
-        print("ADABOOST MODEL SUMMARY")
+        print("DECISION TREE MODEL SUMMARY")
         print("="*60)
         
         if self.model is None:
@@ -339,9 +293,8 @@ class AdaBoostModel:
         print(f"Model type: {type(self.model).__name__}")
         print(f"Best parameters: {self.best_params}")
         print(f"Number of features: {self.model.n_features_in_}")
-        print(f"Number of estimators: {self.model.n_estimators}")
-        print(f"Learning rate: {self.model.learning_rate}")
-        print(f"Base estimator: {type(self.model.estimator_).__name__}")
+        print(f"Tree depth: {self.model.get_depth()}")
+        print(f"Number of leaves: {self.model.get_n_leaves()}")
         
         if 'tuned' in self.training_history:
             results = self.training_history['tuned']
@@ -362,15 +315,15 @@ class AdaBoostModel:
         return self.training_history
 
 def main():
-    """Main function to run AdaBoost model"""
-    print("Starting AdaBoost Model Training (M3-Optimized)...")
+    """Main function to run Decision Tree model"""
+    print("Starting Decision Tree Model Training...")
     print("="*60)
     
     # Load and preprocess data
     preprocessor = DataPreprocessor()
     train_df, test_df = preprocessor.load_data(
-        '/Users/garvrajput/StudioProjects/ML PROJ/train.csv',
-        '/Users/garvrajput/StudioProjects/ML PROJ/test.csv'
+        './data/train.csv',
+        './data/test.csv'
     )
     
     # Preprocess data
@@ -384,42 +337,38 @@ def main():
     # Get feature names
     feature_names = preprocessor.feature_columns
     
-    # Initialize and train AdaBoost model
-    adaboost_model = AdaBoostModel()
+    # Initialize and train Decision Tree model
+    dt_model = DecisionTreeModel()
     
     # Train basic model
-    adaboost_model.train_basic_model(X_train_scaled, y_train, X_val_scaled, y_val)
+    dt_model.train_basic_model(X_train_scaled, y_train, X_val_scaled, y_val)
     
-    # Hyperparameter tuning (M3-optimized)
-    adaboost_model.hyperparameter_tuning(X_train_scaled, y_train, X_val_scaled, y_val)
+    # Hyperparameter tuning
+    dt_model.hyperparameter_tuning(X_train_scaled, y_train, X_val_scaled, y_val)
     
     # Analyze feature importance
-    adaboost_model.analyze_feature_importance(feature_names)
+    dt_model.analyze_feature_importance(feature_names)
     
-    # Analyze estimator weights
-    adaboost_model.analyze_estimator_weights()
-    
-    # Cross-validation analysis (M3-optimized)
-    adaboost_model.cross_validation_analysis(X_train_scaled, y_train)
+    # Cross-validation analysis
+    dt_model.cross_validation_analysis(X_train_scaled, y_train)
     
     # Create visualizations
-    adaboost_model.create_visualizations(X_val_scaled, y_val, feature_names)
+    dt_model.create_visualizations(X_val_scaled, y_val, feature_names)
     
     # Make test predictions
     test_ids = test_df['Id'].values
-    submission = adaboost_model.predict_test_data(X_test_scaled, test_ids)
+    submission = dt_model.predict_test_data(X_test_scaled, test_ids)
     
     # Get model summary
-    summary = adaboost_model.get_model_summary()
+    summary = dt_model.get_model_summary()
     
-    print("\nAdaBoost model training completed!")
+    print("\nDecision Tree model training completed!")
     print("Check the generated files:")
-    print("- adaboost_feature_importance.png")
-    print("- adaboost_estimator_weights.png")
-    print("- adaboost_analysis.png")
-    print("- adaboost_submission.csv")
+    print("- decision_tree_feature_importance.png")
+    print("- decision_tree_analysis.png")
+    print("- decision_tree_submission.csv")
     
-    return adaboost_model, summary
+    return dt_model, summary
 
 if __name__ == "__main__":
     model, summary = main()

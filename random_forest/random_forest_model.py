@@ -1,16 +1,16 @@
 import pandas as pd
 import numpy as np
-import xgboost as xgb
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import GridSearchCV, cross_val_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from data_preprocessing import DataPreprocessor
+from data.data_preprocessing import DataPreprocessor
 import warnings
 warnings.filterwarnings('ignore')
 
-class XGBoostModel:
-    """XGBoost Regression Model for Patient Recovery Prediction"""
+class RandomForestModel:
+    """Random Forest Regression Model for Patient Recovery Prediction"""
     
     def __init__(self):
         self.model = None
@@ -19,17 +19,13 @@ class XGBoostModel:
         self.training_history = {}
         
     def train_basic_model(self, X_train, y_train, X_val, y_val):
-        """Train a basic XGBoost model"""
-        print("Training basic XGBoost model...")
+        """Train a basic Random Forest model"""
+        print("Training basic Random Forest model...")
         print("="*50)
         
         # Create and train basic model with reasonable defaults
-        self.model = xgb.XGBRegressor(
+        self.model = RandomForestRegressor(
             n_estimators=100,
-            max_depth=6,
-            learning_rate=0.1,
-            subsample=0.8,
-            colsample_bytree=0.8,
             random_state=42,
             n_jobs=-1
         )
@@ -59,7 +55,7 @@ class XGBoostModel:
             'val_predictions': y_val_pred
         }
         
-        print(f"Basic XGBoost Results:")
+        print(f"Basic Random Forest Results:")
         print(f"Training MSE: {train_mse:.4f}")
         print(f"Validation MSE: {val_mse:.4f}")
         print(f"Training R²: {train_r2:.4f}")
@@ -70,22 +66,21 @@ class XGBoostModel:
         return self.model
     
     def hyperparameter_tuning(self, X_train, y_train, X_val, y_val):
-        """Perform hyperparameter tuning using GridSearchCV (M3-optimized)"""
-        print("\nPerforming XGBoost hyperparameter tuning (M3-optimized)...")
+        """Perform hyperparameter tuning using GridSearchCV (M3-friendly)"""
+        print("\nPerforming hyperparameter tuning (M3-optimized)...")
         print("="*50)
         
-        # M3-friendly parameter grid for XGBoost
+        # M3-friendly parameter grid (reduced to save time)
         param_grid = {
-            'n_estimators': [100, 200, 300],
-            'max_depth': [3, 6, 9],
-            'learning_rate': [0.01, 0.1, 0.2],
-            'subsample': [0.8, 0.9, 1.0],
-            'colsample_bytree': [0.8, 0.9, 1.0],
-            'reg_alpha': [0, 0.1, 1],
-            'reg_lambda': [0, 0.1, 1]
+            'n_estimators': [50, 100, 200],
+            'max_depth': [5, 10, 15, None],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4],
+            'max_features': ['sqrt', 'log2', 0.5, 0.8],
+            'bootstrap': [True, False]
         }
         
-        print("M3-optimized XGBoost parameter grid:")
+        print("M3-optimized parameter grid:")
         for param, values in param_grid.items():
             print(f"  {param}: {values}")
         
@@ -98,7 +93,7 @@ class XGBoostModel:
         
         # Create GridSearchCV with reduced CV folds for M3
         grid_search = GridSearchCV(
-            xgb.XGBRegressor(random_state=42, n_jobs=-1),
+            RandomForestRegressor(random_state=42, n_jobs=-1),
             param_grid,
             cv=3,  # Reduced from 5 to 3 for M3
             scoring='neg_mean_squared_error',
@@ -107,7 +102,7 @@ class XGBoostModel:
         )
         
         # Fit the grid search
-        print("\nStarting M3-optimized XGBoost grid search...")
+        print("\nStarting M3-optimized grid search...")
         grid_search.fit(X_train, y_train)
         
         # Get best parameters
@@ -143,7 +138,7 @@ class XGBoostModel:
             'best_params': self.best_params
         }
         
-        print(f"\nTuned XGBoost Results:")
+        print(f"\nTuned Random Forest Results:")
         print(f"Training MSE: {train_mse:.4f}")
         print(f"Validation MSE: {val_mse:.4f}")
         print(f"Training R²: {train_r2:.4f}")
@@ -155,7 +150,7 @@ class XGBoostModel:
     
     def analyze_feature_importance(self, feature_names):
         """Analyze and visualize feature importance"""
-        print("\nAnalyzing XGBoost feature importance...")
+        print("\nAnalyzing feature importance...")
         print("="*50)
         
         if self.model is None:
@@ -175,17 +170,17 @@ class XGBoostModel:
         # Create visualization
         plt.figure(figsize=(12, 8))
         sns.barplot(data=self.feature_importance, x='importance', y='feature')
-        plt.title('XGBoost - Feature Importance', fontsize=14, fontweight='bold')
+        plt.title('Random Forest - Feature Importance', fontsize=14, fontweight='bold')
         plt.xlabel('Importance')
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_feature_importance.png', 
+        plt.savefig('./random_forest/random_forest_feature_importance.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
         
         return self.feature_importance
     
     def cross_validation_analysis(self, X_train, y_train, cv=3):
-        """Perform cross-validation analysis (M3-optimized)"""
+        """Perform cross-validation analysis (M3-friendly)"""
         print(f"\nPerforming {cv}-fold cross-validation (M3-optimized)...")
         print("="*50)
         
@@ -212,7 +207,7 @@ class XGBoostModel:
     
     def create_visualizations(self, X_val, y_val, feature_names):
         """Create comprehensive visualizations"""
-        print("\nCreating XGBoost visualizations...")
+        print("\nCreating visualizations...")
         print("="*50)
         
         if self.model is None:
@@ -224,7 +219,7 @@ class XGBoostModel:
         
         # Create figure with subplots
         fig, axes = plt.subplots(2, 2, figsize=(15, 12))
-        fig.suptitle('XGBoost Model Analysis', fontsize=16, fontweight='bold')
+        fig.suptitle('Random Forest Model Analysis', fontsize=16, fontweight='bold')
         
         # 1. Actual vs Predicted scatter plot
         axes[0, 0].scatter(y_val, y_val_pred, alpha=0.6, color='blue')
@@ -264,7 +259,7 @@ class XGBoostModel:
         axes[1, 1].legend()
         
         plt.tight_layout()
-        plt.savefig('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_analysis.png', 
+        plt.savefig('./random_forest/random_forest_analysis.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
     
@@ -291,16 +286,16 @@ class XGBoostModel:
         print(f"Prediction mean: {test_predictions.mean():.2f}")
         
         # Save submission file
-        submission.to_csv('/Users/garvrajput/StudioProjects/ML PROJ/xgboost_submission.csv', 
+        submission.to_csv('./random_forest/random_forest_submission.csv', 
                          index=False)
-        print("Submission file saved as 'xgboost_submission.csv'")
+        print("Submission file saved as 'random_forest_submission.csv'")
         
         return submission
     
     def get_model_summary(self):
         """Get comprehensive model summary"""
         print("\n" + "="*60)
-        print("XGBOOST MODEL SUMMARY")
+        print("RANDOM FOREST MODEL SUMMARY")
         print("="*60)
         
         if self.model is None:
@@ -311,8 +306,7 @@ class XGBoostModel:
         print(f"Best parameters: {self.best_params}")
         print(f"Number of features: {self.model.n_features_in_}")
         print(f"Number of estimators: {self.model.n_estimators}")
-        print(f"Learning rate: {self.model.learning_rate}")
-        print(f"Max depth: {self.model.max_depth}")
+        print(f"Bootstrap: {self.model.bootstrap}")
         
         if 'tuned' in self.training_history:
             results = self.training_history['tuned']
@@ -333,15 +327,15 @@ class XGBoostModel:
         return self.training_history
 
 def main():
-    """Main function to run XGBoost model"""
-    print("Starting XGBoost Model Training (M3-Optimized)...")
+    """Main function to run Random Forest model"""
+    print("Starting Random Forest Model Training (M3-Optimized)...")
     print("="*60)
     
     # Load and preprocess data
     preprocessor = DataPreprocessor()
     train_df, test_df = preprocessor.load_data(
-        '/Users/garvrajput/StudioProjects/ML PROJ/train.csv',
-        '/Users/garvrajput/StudioProjects/ML PROJ/test.csv'
+        './data/train.csv',
+        './data/test.csv'
     )
     
     # Preprocess data
@@ -355,38 +349,38 @@ def main():
     # Get feature names
     feature_names = preprocessor.feature_columns
     
-    # Initialize and train XGBoost model
-    xgboost_model = XGBoostModel()
+    # Initialize and train Random Forest model
+    rf_model = RandomForestModel()
     
     # Train basic model
-    xgboost_model.train_basic_model(X_train_scaled, y_train, X_val_scaled, y_val)
+    rf_model.train_basic_model(X_train_scaled, y_train, X_val_scaled, y_val)
     
     # Hyperparameter tuning (M3-optimized)
-    xgboost_model.hyperparameter_tuning(X_train_scaled, y_train, X_val_scaled, y_val)
+    rf_model.hyperparameter_tuning(X_train_scaled, y_train, X_val_scaled, y_val)
     
     # Analyze feature importance
-    xgboost_model.analyze_feature_importance(feature_names)
+    rf_model.analyze_feature_importance(feature_names)
     
     # Cross-validation analysis (M3-optimized)
-    xgboost_model.cross_validation_analysis(X_train_scaled, y_train)
+    rf_model.cross_validation_analysis(X_train_scaled, y_train)
     
     # Create visualizations
-    xgboost_model.create_visualizations(X_val_scaled, y_val, feature_names)
+    rf_model.create_visualizations(X_val_scaled, y_val, feature_names)
     
     # Make test predictions
     test_ids = test_df['Id'].values
-    submission = xgboost_model.predict_test_data(X_test_scaled, test_ids)
+    submission = rf_model.predict_test_data(X_test_scaled, test_ids)
     
     # Get model summary
-    summary = xgboost_model.get_model_summary()
+    summary = rf_model.get_model_summary()
     
-    print("\nXGBoost model training completed!")
+    print("\nRandom Forest model training completed!")
     print("Check the generated files:")
-    print("- xgboost_feature_importance.png")
-    print("- xgboost_analysis.png")
-    print("- xgboost_submission.csv")
+    print("- random_forest_feature_importance.png")
+    print("- random_forest_analysis.png")
+    print("- random_forest_submission.csv")
     
-    return xgboost_model, summary
+    return rf_model, summary
 
 if __name__ == "__main__":
     model, summary = main()
