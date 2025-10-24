@@ -178,7 +178,7 @@ class XGBoostModel:
         plt.title('XGBoost - Feature Importance', fontsize=14, fontweight='bold')
         plt.xlabel('Importance')
         plt.tight_layout()
-        plt.savefig('./xg_boost/xgboost_feature_importance.png', 
+        plt.savefig('/xgboost_feature_importance.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
         
@@ -264,7 +264,7 @@ class XGBoostModel:
         axes[1, 1].legend()
         
         plt.tight_layout()
-        plt.savefig('./xg_boost/xgboost_analysis.png', 
+        plt.savefig('/xgboost_analysis.png', 
                    dpi=300, bbox_inches='tight')
         plt.show()
     
@@ -291,7 +291,7 @@ class XGBoostModel:
         print(f"Prediction mean: {test_predictions.mean():.2f}")
         
         # Save submission file
-        submission.to_csv('./xg_boost/xgboost_submission.csv', 
+        submission.to_csv('/xgboost_submission.csv', 
                          index=False)
         print("Submission file saved as 'xgboost_submission.csv'")
         
@@ -340,8 +340,8 @@ def main():
     # Load and preprocess data
     preprocessor = DataPreprocessor()
     train_df, test_df = preprocessor.load_data(
-        './data/train.csv',
-        './data/test.csv'
+        './data/train_cleaned.csv',
+        './data/test_cleaned.csv'
     )
     
     # Preprocess data

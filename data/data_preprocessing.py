@@ -69,50 +69,60 @@ class DataPreprocessor:
         return self.feature_columns
     
     def create_additional_features(self):
-        """Create additional engineered features"""
-        print("\nCreating additional features...")
+        """
+        ULTIMATE IMPROVEMENT: Create Polynomials, Interactions, and Log/Root Transforms.
+        """
+        print("\nCreating ultimate feature set...")
         
-        # For training data
-        self.train_df['Therapy_Health_Interaction'] = (
-            self.train_df['Therapy Hours'] * self.train_df['Initial Health Score']
-        )
-        self.train_df['Sleep_FollowUp_Interaction'] = (
-            self.train_df['Average Sleep Hours'] * self.train_df['Follow-Up Sessions']
-        )
-        self.train_df['Health_Sleep_Ratio'] = (
-            self.train_df['Initial Health Score'] / (self.train_df['Average Sleep Hours'] + 1)
-        )
-        self.train_df['Total_Engagement'] = (
-            self.train_df['Therapy Hours'] + self.train_df['Follow-Up Sessions']
-        )
+        # Define key feature names for clarity
+        IHS = 'Initial Health Score'
+        TH = 'Therapy Hours'
+        FUS = 'Follow-Up Sessions'
+        ASH = 'Average Sleep Hours'
+        LAE = 'Lifestyle Activities Encoded' # Assumed to be encoded (0 or 1)
         
-        # For test data
-        self.test_df['Therapy_Health_Interaction'] = (
-            self.test_df['Therapy Hours'] * self.test_df['Initial Health Score']
-        )
-        self.test_df['Sleep_FollowUp_Interaction'] = (
-            self.test_df['Average Sleep Hours'] * self.test_df['Follow-Up Sessions']
-        )
-        self.test_df['Health_Sleep_Ratio'] = (
-            self.test_df['Initial Health Score'] / (self.test_df['Average Sleep Hours'] + 1)
-        )
-        self.test_df['Total_Engagement'] = (
-            self.test_df['Therapy Hours'] + self.test_df['Follow-Up Sessions']
-        )
+        for df in [self.train_df, self.test_df]:
+            
+            # --- 1. Polynomial Terms (from last round, CRITICAL) ---
+            df['IHS_sq'] = df[IHS] ** 2
+            df['IHS_cube'] = df[IHS] ** 3
+            
+            # --- 2. Advanced Interaction Terms ---
+            df['IHS_x_TH'] = df[IHS] * df[TH]
+            df['TH_x_FUS'] = df[TH] * df[FUS]
+            df['TH_x_ASL'] = df[TH] * df[ASH]
+            # Conditional Effect
+            df['IHS_x_LAE'] = df[IHS] * df[LAE]
+
+            # --- 3. Log/Root Non-Linear Transforms ---
+            # Add +1 to avoid issues with log(0)
+            df['Log_TH'] = np.log1p(df[TH]) 
+            df['Sqrt_FUS'] = np.sqrt(df[FUS])
+
+            # --- 4. Original Ratio Features (Retained) ---
+            df['Therapy_per_FollowUp'] = df[TH] / (df[FUS] + 1)
+            df['Sleep_per_FollowUp'] = df[ASH] / (df[FUS] + 1)
+            df['Health_per_Therapy'] = df[IHS] / (df[TH] + 1)
+            df['Engagement_Density'] = (df[TH] + df[FUS]) / (df[ASH] + 1)
         
-        # Update feature columns to include new features
+        # Update feature columns to include all new features
         self.feature_columns.extend([
-            'Therapy_Health_Interaction',
-            'Sleep_FollowUp_Interaction', 
-            'Health_Sleep_Ratio',
-            'Total_Engagement'
+            # Polynomial terms
+            'IHS_sq', 'IHS_cube',
+            # Advanced interaction terms
+            'IHS_x_TH', 'TH_x_FUS', 'TH_x_ASL', 'IHS_x_LAE',
+            # Non-linear transforms
+            'Log_TH', 'Sqrt_FUS',
+            # Original ratio features
+            'Therapy_per_FollowUp', 'Sleep_per_FollowUp', 
+            'Health_per_Therapy', 'Engagement_Density'
         ])
         
-        print("Additional features created:")
-        print("- Therapy_Health_Interaction: Therapy Hours × Initial Health Score")
-        print("- Sleep_FollowUp_Interaction: Average Sleep Hours × Follow-Up Sessions")
-        print("- Health_Sleep_Ratio: Initial Health Score / (Average Sleep Hours + 1)")
-        print("- Total_Engagement: Therapy Hours + Follow-Up Sessions")
+        print("Feature engineering completed with enhanced terms:")
+        print("- Polynomial terms: IHS_sq, IHS_cube")
+        print("- Advanced interactions: IHS_x_TH, TH_x_FUS, TH_x_ASL, IHS_x_LAE")
+        print("- Non-linear transforms: Log_TH, Sqrt_FUS")
+        print("- Ratio features: Therapy_per_FollowUp, Sleep_per_FollowUp, Health_per_Therapy, Engagement_Density")
         
         return self.train_df, self.test_df
     
@@ -127,7 +137,7 @@ class DataPreprocessor:
         else:
             raise ValueError("Method must be 'standard' or 'minmax'")
         
-        # Fit scaler on training data
+        # Fit scaler on training data only
         self.X_train_scaled = scaler.fit_transform(self.X_train)
         self.X_val_scaled = scaler.transform(self.X_val)
         self.X_test_scaled = scaler.transform(self.X_test_final)
@@ -217,9 +227,9 @@ class DataPreprocessor:
         ], axis=1)
         train_processed.to_csv(f'{output_dir}/train_processed.csv', index=False)
         
-        # Save validation data
+        # Save validation data (scaled)
         val_processed = pd.concat([
-            pd.DataFrame(self.X_val, columns=self.feature_columns),
+            pd.DataFrame(self.X_val_scaled, columns=self.feature_columns),
             self.y_val.reset_index(drop=True)
         ], axis=1)
         val_processed.to_csv(f'{output_dir}/val_processed.csv', index=False)
@@ -241,9 +251,10 @@ def main():
     preprocessor = DataPreprocessor()
     
     # Load data
+# In data_preprocessing.py, change the load paths:
     train_df, test_df = preprocessor.load_data(
-        '/Users/garvrajput/StudioProjects/ML PROJ/venv/train.csv',
-        '/Users/garvrajput/StudioProjects/ML PROJ/venv/test.csv'
+        '/Users/garvrajput/StudioProjects/ML PROJ/train_cleaned.csv',  # Use cleaned data
+        '/Users/garvrajput/StudioProjects/ML PROJ/test_cleaned.csv'
     )
     
     # Handle categorical variables

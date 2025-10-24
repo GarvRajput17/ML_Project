@@ -369,8 +369,8 @@ def main():
     # Load and preprocess data
     preprocessor = DataPreprocessor()
     train_df, test_df = preprocessor.load_data(
-        './data/train.csv',
-        './data/test.csv'
+        './data/train_cleaned.csv',
+        './data/test_cleaned.csv'
     )
     
     # Preprocess data
