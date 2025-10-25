@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from sklearn.model_selection import KFold, LeaveOneOut, cross_val_score, cross_validate
-from data_preprocessing import DataPreprocessor
+from data.data_preprocessing import DataPreprocessor
 
 
 def train_and_evaluate_linear_regression():
