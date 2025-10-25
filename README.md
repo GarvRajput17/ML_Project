@@ -214,7 +214,7 @@ python -m linear_regression.linear_regression_model
 
 - **Garv Rajput** - [GarvRajput17](https://github.com/GarvRajput17)
 - **Nirbhay Sharma** - [NirbhaySharma504](https://github.com/NirbhaySharma504)
-
+- **Aishwarya Sharma** - [Aishrma](https://github.com/Aishrma)
 ---
 
 ## 📝 License
