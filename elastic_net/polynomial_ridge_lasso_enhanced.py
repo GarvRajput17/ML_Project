@@ -6,7 +6,7 @@ from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import GridSearchCV, KFold, cross_val_score, cross_validate
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-from data_preprocessing import DataPreprocessor
+from data.data_preprocessing import DataPreprocessor
 
 
 def run_elastic_net_cv(random_state: int = 42):
